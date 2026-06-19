@@ -1120,7 +1120,7 @@
 
     <script>
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  YT STUDY — Full App Logic
+        //  YT STUDY — Full App Logic (FIXED URL EXTRACTION)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         (function() {
@@ -1241,6 +1241,57 @@
 
             function isSameDay(a, b) { return a.slice(0, 10) === b.slice(0, 10); }
 
+            // ─── IMPROVED URL EXTRACTION ───
+            function extractVideoId(url) {
+                try {
+                    const parsed = new URL(url);
+                    // Handle youtu.be and youtube.com
+                    let vid = null;
+                    if (parsed.hostname.includes('youtu.be')) {
+                        vid = parsed.pathname.slice(1);
+                    } else if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('m.youtube.com')) {
+                        // Check for /shorts/ or /v/ or /embed/
+                        const pathMatch = parsed.pathname.match(/\/(shorts|v|embed)\/([^/?]+)/);
+                        if (pathMatch) {
+                            vid = pathMatch[2];
+                        } else {
+                            // query param v
+                            vid = parsed.searchParams.get('v');
+                        }
+                    }
+                    if (vid && vid.length === 11) return vid;
+                    return null;
+                } catch (e) {
+                    // Fallback regex
+                    const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&?#]+)/;
+                    const match = url.match(regex);
+                    return match ? match[1] : null;
+                }
+            }
+
+            function extractPlaylistId(url) {
+                try {
+                    const parsed = new URL(url);
+                    return parsed.searchParams.get('list');
+                } catch (e) {
+                    const m = url.match(/[?&]list=([^&?#]+)/);
+                    return m ? m[1] : null;
+                }
+            }
+
+            function isPlaylistLink(url) {
+                try {
+                    const parsed = new URL(url);
+                    // If path is /playlist or has list param and no v param
+                    if (parsed.pathname.includes('/playlist')) return true;
+                    const hasList = parsed.searchParams.has('list');
+                    const hasV = parsed.searchParams.has('v');
+                    return hasList && !hasV;
+                } catch (e) {
+                    return url.includes('/playlist') || (url.includes('list=') && !url.includes('v='));
+                }
+            }
+
             // ─── STORAGE ───
             function saveData() {
                 try {
@@ -1297,7 +1348,6 @@
                     document.documentElement.classList.remove('dark');
                     settings.theme = 'light';
                 }
-                // update theme buttons
                 $$('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === settings.theme));
                 saveSettings();
             }
@@ -1314,17 +1364,13 @@
             function showView(name) {
                 Object.keys(views).forEach(k => views[k].classList.toggle('active', k === name));
                 currentView = name;
-                // back button
                 backBtn.style.display = (name === 'dashboard') ? 'none' : 'flex';
-                // header title
                 if (name === 'dashboard') headerTitle.textContent = '📚 YT Study';
                 else if (name === 'subject') headerTitle.textContent = '📂 Subject';
                 else if (name === 'player') headerTitle.textContent = '▶ Player';
                 else if (name === 'settings') headerTitle.textContent = '⚙️ Settings';
                 else if (name === 'progress') headerTitle.textContent = '📊 Progress';
-                // fab visibility
                 fab.style.display = (name === 'dashboard' || name === 'subject') ? 'flex' : 'none';
-                // scroll to top
                 document.getElementById('viewport').scrollTop = 0;
             }
 
@@ -1413,12 +1459,10 @@
                   <button class="delete-video" data-id="${v.id}" title="Remove video">✕</button>
                 </div>
               `;
-                    // click to play
                     item.addEventListener('click', (e) => {
                         if (e.target.closest('.delete-video')) return;
                         openPlayer(subId, v.id);
                     });
-                    // delete
                     item.querySelector('.delete-video').addEventListener('click', (e) => {
                         e.stopPropagation();
                         if (confirm('Remove this video?')) {
@@ -1458,18 +1502,13 @@
                 showView('player');
                 renderPlayerInfo();
 
-                // Load video in player
                 if (player && playerReady) {
                     player.loadVideoById(video.videoId);
                 } else {
-                    // player will load when ready
                     pendingVideoData = { subId, vidId };
                 }
 
-                // update autoplay badge
                 updateAutoplayBadge();
-
-                // start progress tracking
                 startProgressTracking();
             }
 
@@ -1484,7 +1523,6 @@
                 toggleWatchedBtn.textContent = v.watched ? '✅ Watched' : '⏳ Mark Watched';
                 toggleWatchedBtn.style.background = v.watched ? '#dcfce7' : '';
                 toggleWatchedBtn.style.color = v.watched ? '#16a34a' : '';
-                // download status
                 updateDownloadUI();
             }
 
@@ -1496,7 +1534,6 @@
             // ─── YOUTUBE PLAYER ───
             function initPlayer() {
                 if (typeof YT === 'undefined' || !YT.Player) {
-                    // wait for API
                     setTimeout(initPlayer, 300);
                     return;
                 }
@@ -1532,7 +1569,6 @@
                         const v = sub.videos.find(vv => vv.id === vidId);
                         if (v) {
                             player.loadVideoById(v.videoId);
-                            // seek to progress
                             if (v.progress > 0 && v.duration > 0) {
                                 const seekTo = (v.progress / 100) * v.duration;
                                 player.seekTo(seekTo, true);
@@ -1546,10 +1582,8 @@
             function onPlayerStateChange(event) {
                 if (!playerVideoObj) return;
                 const state = event.data;
-                // YT.PlayerState: -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued
                 if (state === 1) {
                     isPlaying = true;
-                    // capture duration
                     const dur = player.getDuration();
                     if (dur > 0 && playerVideoObj.duration !== dur) {
                         playerVideoObj.duration = dur;
@@ -1557,16 +1591,13 @@
                     }
                     startProgressTracking();
                 } else if (state === 0) {
-                    // ended
                     isPlaying = false;
-                    // mark as fully watched if progress >= 90%
                     if (playerVideoObj.progress >= 90) {
                         playerVideoObj.watched = true;
                         saveData();
                         renderPlayerInfo();
                         renderSubject(playerSubjectId);
                     }
-                    // auto-next
                     if (settings.autoNext) {
                         playNextVideo();
                     }
@@ -1575,7 +1606,6 @@
                 } else {
                     isPlaying = false;
                 }
-                // Update UI
                 renderPlayerInfo();
                 if (state === 1) {
                     toggleWatchedBtn.textContent = '⏳ Watching...';
@@ -1598,21 +1628,33 @@
                         const dur = player.getDuration();
                         if (dur > 0 && current >= 0) {
                             const pct = clamp((current / dur) * 100, 0, 100);
+                            const prevPct = playerVideoObj.progress || 0;
                             playerVideoObj.progress = pct;
-                            // auto-mark watched at 90%
                             if (pct >= 90 && !playerVideoObj.watched) {
                                 playerVideoObj.watched = true;
+                                const today = getToday();
+                                if (!data.daily) data.daily = {};
+                                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0, _tracked: {} };
+                                if (!data.daily[today]._tracked) data.daily[today]._tracked = {};
+                                if (!data.daily[today]._tracked[playerVideoObj.id]) {
+                                    data.daily[today].videos = (data.daily[today].videos || 0) + 1;
+                                    data.daily[today]._tracked[playerVideoObj.id] = true;
+                                }
                                 saveData();
                                 renderPlayerInfo();
                                 renderSubject(playerSubjectId);
                             }
-                            // update UI
+                            if (pct > prevPct && playerVideoObj.duration > 0) {
+                                const timeInc = ((pct - prevPct) / 100) * playerVideoObj.duration;
+                                const today = getToday();
+                                if (!data.daily) data.daily = {};
+                                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0, _tracked: {} };
+                                data.daily[today].time = (data.daily[today].time || 0) + timeInc;
+                                saveData();
+                            }
                             playerProgress.textContent = '⏱ ' + Math.round(pct) + '%';
-                            // update progress in subject list (thumb overlay)
                             saveData();
-                            // if subject view is open, re-render it
                             if (currentView === 'subject' && currentSubjectId === playerSubjectId) {
-                                // lazy: just update the video list item
                                 updateVideoListItem(playerSubjectId, playerVideoObj.id);
                             }
                         }
@@ -1625,7 +1667,6 @@
                 if (!sub) return;
                 const v = sub.videos.find(vv => vv.id === vidId);
                 if (!v) return;
-                // find the video item in the list and update its progress overlay
                 const items = videoList.querySelectorAll('.video-item');
                 for (const item of items) {
                     const delBtn = item.querySelector('.delete-video');
@@ -1635,13 +1676,11 @@
                             const pct = clamp(v.progress || 0, 0, 100);
                             overlay.style.width = pct + '%';
                         }
-                        // update status badge
                         const statusSpan = item.querySelector('.status');
                         if (statusSpan) {
                             statusSpan.className = 'status ' + (v.watched ? 'watched' : 'pending');
                             statusSpan.textContent = v.watched ? '✅ Watched' : '⏳ Pending';
                         }
-                        // update sub text
                         const subText = item.querySelector('.info .sub');
                         if (subText) {
                             const pct = clamp(v.progress || 0, 0, 100);
@@ -1661,13 +1700,11 @@
                 if (!sub) return;
                 const idx = sub.videos.findIndex(v => v.id === playerVideoId);
                 if (idx === -1) return;
-                // find next video that is not watched (or any if all watched)
                 let nextIdx = -1;
                 for (let i = idx + 1; i < sub.videos.length; i++) {
                     if (!sub.videos[i].watched) { nextIdx = i; break; }
                 }
                 if (nextIdx === -1) {
-                    // all remaining watched, loop to first unwatched or first
                     for (let i = 0; i < sub.videos.length; i++) {
                         if (!sub.videos[i].watched) { nextIdx = i; break; }
                     }
@@ -1687,7 +1724,6 @@
                 if (!playerVideoObj) return;
                 playerVideoObj.watched = !playerVideoObj.watched;
                 if (playerVideoObj.watched) {
-                    // if marked watched, set progress to 100
                     playerVideoObj.progress = 100;
                     if (player && playerReady) {
                         try { player.seekTo(player.getDuration(), true); } catch (e) {}
@@ -1746,7 +1782,6 @@
                     if (data2 && data2.download_url) {
                         dlStatusText.textContent = '✅ Ready';
                         dlFill.style.width = '100%';
-                        // trigger download
                         const a = document.createElement('a');
                         a.href = data2.download_url;
                         a.target = '_blank';
@@ -1756,7 +1791,6 @@
                         document.body.removeChild(a);
                         showToast('⬇ Download started!');
                     } else if (data2 && data2.url) {
-                        // alternative response format
                         const a = document.createElement('a');
                         a.href = data2.url;
                         a.target = '_blank';
@@ -1774,7 +1808,6 @@
                     console.warn('Download error', err);
                     dlStatusText.textContent = '❌ Failed';
                     showToast('⚠️ Download failed. Try again or use another video.');
-                    // fallback: open in new tab
                     const fallback = `https://www.youtube.com/watch?v=${videoId}`;
                     if (confirm('Download API failed. Open video on YouTube to download?')) {
                         window.open(fallback, '_blank');
@@ -1789,7 +1822,6 @@
             downloadBtn.addEventListener('click', startDownload);
 
             function updateDownloadUI() {
-                // reset download section
                 dlFill.style.width = '0%';
                 dlStatusText.textContent = 'Ready';
                 dlActionBtn.disabled = false;
@@ -1798,7 +1830,7 @@
 
             // ─── MODAL ───
             let modalResolve = null;
-            let modalType = 'subject'; // 'subject' | 'video'
+            let modalType = 'subject';
 
             function openModal(title, sub, label, extraLabel, type, extraPlaceholder = '') {
                 return new Promise((resolve) => {
@@ -1859,7 +1891,6 @@
             // ─── FAB ───
             fab.addEventListener('click', () => {
                 if (currentView === 'dashboard') {
-                    // add subject
                     openModal('Add Subject', 'Enter a name for your new subject', 'Subject Name', '', 'subject')
                         .then(result => {
                             if (result && result.type === 'subject') {
@@ -1876,7 +1907,6 @@
                             }
                         });
                 } else if (currentView === 'subject' && currentSubjectId) {
-                    // add video to current subject
                     openModal('Add Video', 'Paste a YouTube video or playlist link', 'Video Title (auto-detected)',
                         'YouTube URL', 'video', 'https://youtube.com/watch?v=... or playlist link'
                     ).then(async result => {
@@ -1892,18 +1922,19 @@
                 const sub = data.subjects.find(s => s.id === subId);
                 if (!sub) { showToast('Subject not found'); return; }
 
-                // detect if playlist
-                const isPlaylist = url.includes('list=') || url.includes('playlist');
-                if (isPlaylist) {
+                // Check if it's a playlist link
+                if (isPlaylistLink(url)) {
                     await importPlaylist(subId, url);
                     return;
                 }
 
-                // single video
                 const videoId = extractVideoId(url);
-                if (!videoId) { showToast('⚠️ Invalid YouTube URL'); return; }
+                if (!videoId) {
+                    showToast('⚠️ Invalid YouTube URL – could not find video ID');
+                    return;
+                }
 
-                // check if already exists
+                // Check for duplicate
                 if (sub.videos.some(v => v.videoId === videoId)) {
                     showToast('⚠️ Video already in this subject');
                     return;
@@ -1932,13 +1963,15 @@
                 saveData();
                 renderSubject(subId);
                 showToast('🎬 Video added: ' + newVideo.title);
-                // auto-play
                 openPlayer(subId, newVideo.id);
             }
 
             async function importPlaylist(subId, url) {
                 const playlistId = extractPlaylistId(url);
-                if (!playlistId) { showToast('⚠️ Could not extract playlist ID'); return; }
+                if (!playlistId) {
+                    showToast('⚠️ Could not extract playlist ID');
+                    return;
+                }
 
                 showToast('⏳ Fetching playlist...');
                 try {
@@ -1968,7 +2001,6 @@
                                 });
                                 added++;
                             }
-                            // small delay to avoid rate limiting
                             await new Promise(r => setTimeout(r, 200));
                         }
                     }
@@ -1976,7 +2008,6 @@
                     renderSubject(subId);
                     showToast(`📋 Playlist imported: ${added} video${added > 1 ? 's' : ''}`);
                     if (added > 0 && sub.videos.length > 0) {
-                        // open first video
                         const first = sub.videos[sub.videos.length - added];
                         if (first) openPlayer(subId, first.id);
                     }
@@ -1986,32 +2017,16 @@
                 }
             }
 
-            function extractVideoId(url) {
-                const patterns = [
-                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&?#]+)/,
-                    /youtube\.com\/shorts\/([^&?#]+)/
-                ];
-                for (const p of patterns) {
-                    const m = url.match(p);
-                    if (m) return m[1];
-                }
-                return null;
-            }
-
-            function extractPlaylistId(url) {
-                const m = url.match(/[?&]list=([^&?#]+)/);
-                return m ? m[1] : null;
-            }
-
             async function fetchVideoInfo(videoId) {
                 try {
+                    // Use oembed for title and thumbnail
                     const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
                     if (!res.ok) return null;
                     const data2 = await res.json();
                     return {
                         title: data2.title,
                         thumbnail: data2.thumbnail_url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-                        duration: 0, // oembed doesn't give duration
+                        duration: 0,
                     };
                 } catch (e) {
                     console.warn('Fetch video info error', e);
@@ -2021,7 +2036,6 @@
 
             async function fetchPlaylistVideos(playlistId) {
                 try {
-                    // Use YouTube RSS feed
                     const url = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
                     const res = await fetch(url);
                     if (!res.ok) throw new Error('RSS fetch failed');
@@ -2041,7 +2055,7 @@
                     return ids;
                 } catch (e) {
                     console.warn('Fetch playlist error', e);
-                    // fallback: try to parse from page
+                    // fallback: scrape
                     try {
                         const pageUrl = `https://www.youtube.com/playlist?list=${playlistId}`;
                         const res2 = await fetch(pageUrl);
@@ -2063,16 +2077,13 @@
             });
 
             function renderSettings() {
-                // theme
                 $$('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === settings.theme));
-                // toggles
                 autoNextToggle.classList.toggle('active', settings.autoNext);
                 bgPlayToggle.classList.toggle('active', settings.bgPlay);
                 dlFormat.value = settings.dlFormat || 'mp4';
                 updateAutoplayBadge();
             }
 
-            // theme buttons
             themeOptions.addEventListener('click', (e) => {
                 const btn = e.target.closest('.theme-btn');
                 if (!btn) return;
@@ -2080,7 +2091,6 @@
                 renderSettings();
             });
 
-            // toggles
             autoNextToggle.addEventListener('click', () => {
                 settings.autoNext = !settings.autoNext;
                 saveSettings();
@@ -2115,26 +2125,14 @@
                 let todaySeconds = 0;
                 let totalVidCount = 0;
 
-                // track daily progress from video data
-                // We store daily stats in a separate object in data
                 if (!data.daily) data.daily = {};
                 if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0 };
-
-                // compute today's stats from videos watched today (we approximate by checking progress)
-                // For simplicity, we count videos with progress >= 90 as "watched today"
-                // and we track time spent based on progress changes
-                // We'll store daily stats in data.daily
-
-                // Actually, let's compute from the data we have:
-                // For each video, if it's watched and updated today, count it
-                // We'll use a simpler approach: count watched videos and estimate time
 
                 let totalWatched = 0;
                 let totalTime = 0;
                 subs.forEach(sub => {
                     sub.videos.forEach(v => {
                         if (v.watched) totalWatched++;
-                        // estimate time: if progress > 0, assume (progress/100) * duration
                         if (v.progress > 0 && v.duration > 0) {
                             totalTime += (v.progress / 100) * v.duration;
                         }
@@ -2142,23 +2140,14 @@
                 });
                 totalVidCount = totalWatched;
 
-                // Today's stats: we use the daily object
                 const todayData = data.daily[today] || { videos: 0, time: 0 };
                 todayCount = todayData.videos || 0;
                 todaySeconds = todayData.time || 0;
-
-                // But we also want to count today's watched videos dynamically
-                // Let's recompute today's data from videos that were watched today
-                // We'll use the updatedAt field if present, or fallback to the daily object
-
-                // For simplicity, we'll use the daily object and also count newly watched videos
-                // When a video is marked watched, we update the daily stats
 
                 todayVideos.textContent = todayCount;
                 todayTime.textContent = formatTime(todaySeconds);
                 totalVideos.textContent = totalVidCount;
 
-                // streak: count consecutive days with at least 1 video
                 let streak = 0;
                 const dates = Object.keys(data.daily || {}).sort();
                 for (let i = dates.length - 1; i >= 0; i--) {
@@ -2171,7 +2160,6 @@
                 }
                 streakDays.textContent = streak;
 
-                // history: last 7 days
                 const weekAgo = getWeekAgo();
                 const historyData = [];
                 for (let d = new Date(weekAgo); d <= new Date(); d.setDate(d.getDate() + 1)) {
@@ -2195,25 +2183,6 @@
             function formatDate(dateStr) {
                 const d = new Date(dateStr + 'T00:00:00');
                 return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            }
-
-            // ─── UPDATE DAILY PROGRESS ───
-            function updateDailyProgress(videoId, progress, watched) {
-                const today = getToday();
-                if (!data.daily) data.daily = {};
-                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0 };
-                // If video was just marked watched, increment count
-                // This is called from the player when progress changes
-                // We'll check if the video is now watched and wasn't before
-                // But we need to track this per video per day to avoid double counting
-                if (!data.daily[today]._tracked) data.daily[today]._tracked = {};
-                if (watched && !data.daily[today]._tracked[videoId]) {
-                    data.daily[today].videos = (data.daily[today].videos || 0) + 1;
-                    data.daily[today]._tracked[videoId] = true;
-                    saveData();
-                }
-                // update time: we add incremental time
-                // We'll do this in the progress interval
             }
 
             // ─── EXPORT / IMPORT / CLEAR ───
@@ -2320,27 +2289,21 @@
                 loadSettings();
                 applyTheme(settings.theme);
 
-                // ensure daily object exists
                 if (!data.daily) data.daily = {};
 
                 renderDashboard();
                 showView('dashboard');
 
-                // init YouTube player
                 if (typeof YT !== 'undefined' && YT.Player) {
                     initPlayer();
                 } else {
-                    // wait for API
                     window.onYouTubeIframeAPIReady = initPlayer;
-                    // if already loaded, initPlayer will be called by the API
                 }
 
-                // listen for visibility change for background play
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden) {
-                        // background: if bgPlay is on, keep playing
                         if (settings.bgPlay && player && isPlaying) {
-                            // do nothing, keep playing
+                            // keep playing
                         }
                     }
                 });
@@ -2348,15 +2311,13 @@
                 console.log('📚 YT Study initialized');
             }
 
-            // handle YouTube API load
             if (typeof YT === 'undefined') {
                 window.onYouTubeIframeAPIReady = initPlayer;
             }
 
-            // start
             init();
 
-            // ─── EXTRA: handle keyboard shortcuts ───
+            // ─── KEYBOARD SHORTCUTS ───
             document.addEventListener('keydown', (e) => {
                 if (e.key === ' ' && currentView === 'player') {
                     e.preventDefault();
@@ -2382,78 +2343,7 @@
                 }
             });
 
-            // ─── OVERRIDE: track daily progress on video watch ───
-            // Patch the progress tracking to update daily stats
-            const origStartTracking = startProgressTracking;
-            startProgressTracking = function() {
-                clearInterval(progressInterval);
-                progressInterval = setInterval(() => {
-                    if (!player || !playerVideoObj || !playerReady) return;
-                    try {
-                        const current = player.getCurrentTime();
-                        const dur = player.getDuration();
-                        if (dur > 0 && current >= 0) {
-                            const pct = clamp((current / dur) * 100, 0, 100);
-                            const prevPct = playerVideoObj.progress || 0;
-                            playerVideoObj.progress = pct;
-                            if (pct >= 90 && !playerVideoObj.watched) {
-                                playerVideoObj.watched = true;
-                                // update daily
-                                const today = getToday();
-                                if (!data.daily) data.daily = {};
-                                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0, _tracked: {} };
-                                if (!data.daily[today]._tracked) data.daily[today]._tracked = {};
-                                if (!data.daily[today]._tracked[playerVideoObj.id]) {
-                                    data.daily[today].videos = (data.daily[today].videos || 0) + 1;
-                                    data.daily[today]._tracked[playerVideoObj.id] = true;
-                                }
-                                saveData();
-                                renderPlayerInfo();
-                                renderSubject(playerSubjectId);
-                            }
-                            // add time increment (only if progress increased)
-                            if (pct > prevPct && playerVideoObj.duration > 0) {
-                                const timeInc = ((pct - prevPct) / 100) * playerVideoObj.duration;
-                                const today = getToday();
-                                if (!data.daily) data.daily = {};
-                                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0, _tracked: {} };
-                                data.daily[today].time = (data.daily[today].time || 0) + timeInc;
-                                saveData();
-                            }
-                            // update UI
-                            playerProgress.textContent = '⏱ ' + Math.round(pct) + '%';
-                            saveData();
-                            if (currentView === 'subject' && currentSubjectId === playerSubjectId) {
-                                updateVideoListItem(playerSubjectId, playerVideoObj.id);
-                            }
-                        }
-                    } catch (e) { /* ignore */ }
-                }, 1000);
-            };
-
-            // Patch openPlayer to use the new tracking
-            const origOpenPlayer = openPlayer;
-            openPlayer = function(subId, vidId) {
-                origOpenPlayer(subId, vidId);
-                // ensure daily tracking is active
-            };
-
-            // Also patch renderPlayerInfo to show daily stats
-            const origRenderPlayerInfo = renderPlayerInfo;
-            renderPlayerInfo = function() {
-                origRenderPlayerInfo();
-                // update progress view if it's open
-                if (currentView === 'progress') renderProgress();
-            };
-
-            // Patch renderProgress to be called after daily updates
-            const origRenderProgress = renderProgress;
-            renderProgress = function() {
-                origRenderProgress();
-            };
-
-            console.log('✅ YT Study fully loaded!');
         })();
     </script>
 </body>
-</html>
+                        </html>
