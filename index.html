@@ -1,0 +1,2459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>YT Study - Ad-Free Learning</title>
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api">
+    </script>
+    <style>
+        /* ───────── RESET & BASE ───────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg: #f4f6fa;
+            --surface: #ffffff;
+            --surface2: #f0f2f6;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-light: #eef2ff;
+            --text: #1e293b;
+            --text2: #475569;
+            --text3: #94a3b8;
+            --border: #e2e8f0;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.25s ease;
+            --nav-height: 64px;
+            --fab-size: 56px;
+            --progress-height: 6px;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .dark {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface2: #2d3a4f;
+            --primary: #818cf8;
+            --primary-hover: #6366f1;
+            --primary-light: #1e293b;
+            --text: #f1f5f9;
+            --text2: #cbd5e1;
+            --text3: #64748b;
+            --border: #334155;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        }
+        html,
+        body {
+            height: 100%;
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            transition: background var(--transition), color var(--transition);
+            overflow: hidden;
+        }
+        a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            border: none;
+            background: none;
+            color: inherit;
+        }
+        input,
+        textarea {
+            font-family: inherit;
+            font-size: inherit;
+            border: none;
+            outline: none;
+            background: var(--surface2);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            width: 100%;
+            transition: background var(--transition), color var(--transition);
+        }
+        input::placeholder {
+            color: var(--text3);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        /* ───────── APP SHELL ───────── */
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+            background: var(--bg);
+            transition: background var(--transition);
+        }
+
+        /* ───────── HEADER ───────── */
+        #header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            height: var(--nav-height);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            transition: background var(--transition), border var(--transition);
+            z-index: 10;
+            position: relative;
+        }
+        #header .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #header .left .back-btn {
+            display: none;
+            font-size: 22px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        #header .left .back-btn:hover {
+            background: var(--surface2);
+        }
+        #header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, var(--primary), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            white-space: nowrap;
+        }
+        #header .right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #header .right .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: background 0.2s;
+            position: relative;
+        }
+        #header .right .icon-btn:hover {
+            background: var(--surface2);
+        }
+        #header .right .badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 16px;
+            height: 16px;
+            background: #ef4444;
+            border-radius: 50%;
+            font-size: 9px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ───────── MAIN VIEWPORT ───────── */
+        #viewport {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 16px 100px;
+            transition: background var(--transition);
+            scroll-behavior: smooth;
+        }
+
+        /* ───────── VIEWS ───────── */
+        .view {
+            display: none;
+            animation: fadeUp 0.3s ease;
+        }
+        .view.active {
+            display: block;
+        }
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ───────── DASHBOARD ───────── */
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 14px;
+            margin-top: 4px;
+        }
+        .subject-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px 16px 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: all var(--transition);
+            cursor: pointer;
+            position: relative;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .subject-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+        .dark .subject-card:hover {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .subject-card .name {
+            font-size: 17px;
+            font-weight: 600;
+            word-break: break-word;
+        }
+        .subject-card .meta {
+            font-size: 13px;
+            color: var(--text3);
+            margin-top: 8px;
+        }
+        .subject-card .meta span {
+            margin-right: 12px;
+        }
+        .subject-card .delete-subject {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            color: var(--text3);
+            font-size: 16px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .subject-card .delete-subject:hover {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        .subject-card .progress-ring {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--surface2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            margin-top: 8px;
+            align-self: flex-end;
+        }
+
+        /* ───────── SUBJECT VIEW (videos) ───────── */
+        .subject-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .subject-header h2 {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .subject-header .video-count {
+            font-size: 14px;
+            color: var(--text3);
+            background: var(--surface2);
+            padding: 4px 14px;
+            border-radius: 20px;
+        }
+        .video-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .video-item {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all var(--transition);
+            position: relative;
+        }
+        .video-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
+        }
+        .video-item .thumb {
+            width: 100px;
+            height: 60px;
+            border-radius: 6px;
+            background: var(--surface2);
+            flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .video-item .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .video-item .thumb .progress-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 0 2px 2px 0;
+            transition: width 0.3s;
+        }
+        .video-item .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .video-item .info .title {
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .video-item .info .sub {
+            font-size: 12px;
+            color: var(--text3);
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .video-item .info .sub .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status.watched {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .status.pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .video-item .actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .video-item .actions button {
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: background 0.2s;
+            color: var(--text2);
+        }
+        .video-item .actions button:hover {
+            background: var(--surface2);
+            color: var(--text);
+        }
+        .video-item .actions .dl-status {
+            font-size: 11px;
+            color: var(--text3);
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--surface2);
+            white-space: nowrap;
+        }
+        .video-item .delete-video {
+            color: var(--text3);
+            font-size: 14px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .video-item .delete-video:hover {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        /* ───────── PLAYER VIEW ───────── */
+        #playerView .player-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            background: #000;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        #playerView .player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        #playerView .video-meta {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        #playerView .video-meta h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+        #playerView .video-meta .sub {
+            font-size: 13px;
+            color: var(--text2);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        #playerView .player-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        #playerView .player-controls .btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: var(--surface2);
+            color: var(--text);
+        }
+        #playerView .player-controls .btn:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+        #playerView .player-controls .btn.primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        #playerView .player-controls .btn.primary:hover {
+            background: var(--primary-hover);
+        }
+        #playerView .player-controls .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #playerView .download-section {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+        #playerView .download-section .label {
+            font-size: 13px;
+            color: var(--text2);
+            font-weight: 500;
+        }
+        #playerView .download-section .dl-progress {
+            flex: 1;
+            min-width: 100px;
+            height: 6px;
+            background: var(--surface2);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #playerView .download-section .dl-progress .fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        #playerView .download-section .dl-status-text {
+            font-size: 12px;
+            color: var(--text3);
+            min-width: 60px;
+        }
+
+        /* ───────── SETTINGS ───────── */
+        .settings-group {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .settings-group .group-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text2);
+            margin-bottom: 12px;
+            letter-spacing: 0.3px;
+        }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            gap: 12px;
+        }
+        .settings-row .label {
+            font-size: 15px;
+        }
+        .settings-row .desc {
+            font-size: 13px;
+            color: var(--text3);
+        }
+        /* Toggle switch */
+        .toggle {
+            width: 44px;
+            height: 26px;
+            background: var(--border);
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        .toggle.active {
+            background: var(--primary);
+        }
+        .toggle .knob {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #fff;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+        .toggle.active .knob {
+            transform: translateX(18px);
+        }
+        .theme-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .theme-options .theme-btn {
+            padding: 6px 18px;
+            border-radius: 20px;
+            border: 2px solid var(--border);
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: var(--surface2);
+        }
+        .theme-options .theme-btn.active {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .theme-options .theme-btn:hover {
+            border-color: var(--primary);
+        }
+
+        /* ───────── DAILY PROGRESS ───────── */
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .progress-stats .stat {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .progress-stats .stat .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .progress-stats .stat .label {
+            font-size: 13px;
+            color: var(--text2);
+            margin-top: 2px;
+        }
+        .progress-history {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .progress-history .day-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        .progress-history .day-item:last-child {
+            border-bottom: none;
+        }
+        .progress-history .day-item .date {
+            font-weight: 500;
+        }
+        .progress-history .day-item .detail {
+            color: var(--text2);
+        }
+
+        /* ───────── FAB ───────── */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: var(--fab-size);
+            height: var(--fab-size);
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-size: 28px;
+            font-weight: 300;
+            box-shadow: 0 8px 28px rgba(99, 102, 241, 0.35);
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .fab:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.5);
+        }
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* ───────── MODAL ───────── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.25s ease;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius);
+            max-width: 480px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .modal .modal-sub {
+            font-size: 14px;
+            color: var(--text2);
+            margin-bottom: 16px;
+        }
+        .modal .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .modal .modal-actions .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            flex: 1;
+            text-align: center;
+            min-width: 80px;
+        }
+        .modal .modal-actions .btn.primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .modal .modal-actions .btn.primary:hover {
+            background: var(--primary-hover);
+        }
+        .modal .modal-actions .btn.secondary {
+            background: var(--surface2);
+            color: var(--text);
+        }
+        .modal .modal-actions .btn.secondary:hover {
+            background: var(--border);
+        }
+        .modal .input-group {
+            margin-bottom: 14px;
+        }
+        .modal .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text2);
+            margin-bottom: 4px;
+        }
+
+        /* ───────── EMPTY STATE ───────── */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text3);
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        .empty-state h3 {
+            font-size: 18px;
+            color: var(--text2);
+            margin-bottom: 4px;
+        }
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* ───────── RESPONSIVE ───────── */
+        @media (max-width: 480px) {
+            .subjects-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 10px;
+            }
+            .video-item {
+                flex-wrap: wrap;
+                padding: 10px 12px;
+            }
+            .video-item .thumb {
+                width: 80px;
+                height: 48px;
+            }
+            .video-item .info .title {
+                font-size: 13px;
+                white-space: normal;
+                line-height: 1.3;
+            }
+            .video-item .actions {
+                width: 100%;
+                justify-content: flex-end;
+                margin-top: 4px;
+            }
+            #playerView .player-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #playerView .player-controls .btn {
+                text-align: center;
+            }
+            .modal {
+                padding: 18px;
+            }
+            .fab {
+                bottom: 18px;
+                right: 18px;
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
+            #header h1 {
+                font-size: 17px;
+            }
+            .progress-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (min-width: 768px) {
+            .subjects-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            #viewport {
+                padding: 24px 32px 100px;
+            }
+        }
+
+        /* ───────── MISC ───────── */
+        .hidden {
+            display: none !important;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gap-8 {
+            gap: 8px;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-muted {
+            color: var(--text3);
+            font-size: 13px;
+        }
+        .w-full {
+            width: 100%;
+        }
+        .truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* auto-play indicator */
+        .autoplay-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--text3);
+            background: var(--surface2);
+            padding: 2px 12px;
+            border-radius: 12px;
+        }
+        .autoplay-badge.active {
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        /* small loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* toast notification */
+        .toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 10px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── APP ─── -->
+    <div id="app">
+
+        <!-- HEADER -->
+        <header id="header">
+            <div class="left">
+                <button class="back-btn" id="backBtn" aria-label="Back">←</button>
+                <h1 id="appTitle">📚 YT Study</h1>
+            </div>
+            <div class="right">
+                <button class="icon-btn" id="progressBtn" aria-label="Daily Progress" title="Daily Progress">📊</button>
+                <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">⚙️</button>
+            </div>
+        </header>
+
+        <!-- VIEWPORT -->
+        <div id="viewport">
+
+            <!-- ─── DASHBOARD VIEW ─── -->
+            <div class="view active" id="dashboardView">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:6px;">
+                    <h2 style="font-size:18px;font-weight:600;">Your Subjects</h2>
+                    <span class="text-muted" id="subjectCount">0 subjects</span>
+                </div>
+                <div class="subjects-grid" id="subjectsGrid">
+                    <!-- rendered by JS -->
+                </div>
+                <div class="empty-state" id="emptySubjects">
+                    <div class="icon">📂</div>
+                    <h3>No subjects yet</h3>
+                    <p>Tap the + button to create your first subject</p>
+                </div>
+            </div>
+
+            <!-- ─── SUBJECT VIEW ─── -->
+            <div class="view" id="subjectView">
+                <div class="subject-header">
+                    <h2 id="subjectTitle">Subject</h2>
+                    <span class="video-count" id="videoCount">0 videos</span>
+                </div>
+                <div class="video-list" id="videoList">
+                    <!-- rendered by JS -->
+                </div>
+                <div class="empty-state" id="emptyVideos">
+                    <div class="icon">🎬</div>
+                    <h3>No videos yet</h3>
+                    <p>Tap the + button to add a YouTube video or playlist</p>
+                </div>
+            </div>
+
+            <!-- ─── PLAYER VIEW ─── -->
+            <div class="view" id="playerView">
+                <div class="player-wrapper" id="playerWrapper">
+                    <div id="player"></div>
+                </div>
+                <div class="video-meta">
+                    <h3 id="playerTitle">Video Title</h3>
+                    <div class="sub">
+                        <span id="playerSubject">📁 Subject</span>
+                        <span id="playerProgress">⏱ 0%</span>
+                        <span class="autoplay-badge" id="autoplayBadge">⏭ Auto-next</span>
+                    </div>
+                </div>
+                <div class="player-controls" id="playerControls">
+                    <button class="btn" id="toggleWatchedBtn">✅ Mark Watched</button>
+                    <button class="btn" id="resetProgressBtn">↺ Reset Progress</button>
+                    <button class="btn" id="downloadBtn">⬇ Download</button>
+                    <button class="btn" id="closePlayerBtn">✕ Close</button>
+                </div>
+                <div class="download-section" id="downloadSection">
+                    <span class="label">⬇ Download</span>
+                    <div class="dl-progress"><div class="fill" id="dlFill"></div></div>
+                    <span class="dl-status-text" id="dlStatusText">Ready</span>
+                    <button class="btn primary" id="dlActionBtn" style="padding:6px 16px;font-size:13px;">Start</button>
+                </div>
+            </div>
+
+            <!-- ─── SETTINGS VIEW ─── -->
+            <div class="view" id="settingsView">
+                <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">⚙️ Settings</h2>
+
+                <div class="settings-group">
+                    <div class="group-title">🎨 Theme</div>
+                    <div class="theme-options" id="themeOptions">
+                        <button class="theme-btn active" data-theme="light">☀ Light</button>
+                        <button class="theme-btn" data-theme="dark">🌙 Dark</button>
+                        <button class="theme-btn" data-theme="system">🖥 System</button>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">▶️ Playback</div>
+                    <div class="settings-row">
+                        <div><div class="label">Auto-next</div><div class="desc">Automatically play next video</div></div>
+                        <div class="toggle active" id="autoNextToggle"><div class="knob"></div></div>
+                    </div>
+                    <div class="settings-row">
+                        <div><div class="label">Background Play</div><div class="desc">Keep playing when navigating away</div></div>
+                        <div class="toggle active" id="bgPlayToggle"><div class="knob"></div></div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">⬇ Download</div>
+                    <div class="settings-row">
+                        <div><div class="label">Default Format</div><div class="desc">MP4 (video) or MP3 (audio)</div></div>
+                        <select id="dlFormat" style="background:var(--surface2);padding:8px 14px;border-radius:8px;border:1px solid var(--border);color:var(--text);font-size:14px;">
+                            <option value="mp4">MP4</option>
+                            <option value="mp3">MP3</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">💾 Data</div>
+                    <button class="btn secondary" id="exportDataBtn" style="padding:10px 20px;border-radius:8px;background:var(--surface2);font-weight:500;width:100%;">📤 Export All Data</button>
+                    <button class="btn secondary" id="importDataBtn" style="padding:10px 20px;border-radius:8px;background:var(--surface2);font-weight:500;width:100%;margin-top:8px;">📥 Import Data</button>
+                    <input type="file" id="importFileInput" accept=".json" style="display:none;">
+                    <button class="btn secondary" id="clearDataBtn" style="padding:10px 20px;border-radius:8px;background:#fee2e2;color:#ef4444;font-weight:500;width:100%;margin-top:8px;">🗑 Clear All Data</button>
+                </div>
+            </div>
+
+            <!-- ─── DAILY PROGRESS VIEW ─── -->
+            <div class="view" id="progressView">
+                <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">📊 Daily Progress</h2>
+                <p class="text-muted" style="margin-bottom:16px;">Track your learning consistency</p>
+                <div class="progress-stats" id="progressStats">
+                    <div class="stat"><div class="number" id="todayVideos">0</div><div class="label">Videos Today</div></div>
+                    <div class="stat"><div class="number" id="todayTime">0m</div><div class="label">Time Today</div></div>
+                    <div class="stat"><div class="number" id="totalVideos">0</div><div class="label">Total Videos</div></div>
+                    <div class="stat"><div class="number" id="streakDays">0</div><div class="label">Day Streak</div></div>
+                </div>
+                <div class="progress-history" id="progressHistory">
+                    <!-- rendered by JS -->
+                </div>
+            </div>
+
+        </div><!-- /viewport -->
+
+        <!-- FAB -->
+        <button class="fab" id="fab" aria-label="Add">＋</button>
+
+        <!-- TOAST -->
+        <div class="toast" id="toast"></div>
+
+        <!-- ─── MODAL ─── -->
+        <div class="modal-overlay" id="modalOverlay">
+            <div class="modal" id="modal">
+                <div class="modal-title" id="modalTitle">Add Subject</div>
+                <div class="modal-sub" id="modalSub">Enter a name for your new subject</div>
+                <div class="input-group">
+                    <label id="modalLabel">Subject Name</label>
+                    <input type="text" id="modalInput" placeholder="e.g. Mathematics" />
+                </div>
+                <div class="input-group hidden" id="modalExtraGroup">
+                    <label id="modalExtraLabel">YouTube URL</label>
+                    <input type="text" id="modalExtraInput" placeholder="https://youtube.com/watch?v=... or playlist" />
+                </div>
+                <div class="modal-actions">
+                    <button class="btn secondary" id="modalCancel">Cancel</button>
+                    <button class="btn primary" id="modalConfirm">Add</button>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /app -->
+
+    <script>
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  YT STUDY — Full App Logic
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        (function() {
+            'use strict';
+
+            // ─── STATE ───
+            const STATE_KEY = 'ytstudy_data';
+            const SETTINGS_KEY = 'ytstudy_settings';
+
+            let data = {
+                subjects: [], // { id, name, videos: [{ id, videoId, title, thumbnail, watched, progress, duration, downloadStatus, downloadProgress, addedAt }] }
+            };
+
+            let settings = {
+                theme: 'light',
+                autoNext: true,
+                bgPlay: true,
+                dlFormat: 'mp4',
+            };
+
+            let currentSubjectId = null;
+            let currentVideoId = null;
+            let player = null;
+            let playerReady = false;
+            let isPlaying = false;
+            let progressInterval = null;
+            let currentView = 'dashboard';
+            let pendingVideoData = null; // for modal flow
+
+            // ─── DOM REFS ───
+            const $ = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+
+            const views = {
+                dashboard: $('#dashboardView'),
+                subject: $('#subjectView'),
+                player: $('#playerView'),
+                settings: $('#settingsView'),
+                progress: $('#progressView'),
+            };
+            const headerTitle = $('#appTitle');
+            const backBtn = $('#backBtn');
+            const subjectsGrid = $('#subjectsGrid');
+            const emptySubjects = $('#emptySubjects');
+            const subjectCount = $('#subjectCount');
+            const subjectTitle = $('#subjectTitle');
+            const videoList = $('#videoList');
+            const emptyVideos = $('#emptyVideos');
+            const videoCount = $('#videoCount');
+            const fab = $('#fab');
+            const modalOverlay = $('#modalOverlay');
+            const modalTitle = $('#modalTitle');
+            const modalSub = $('#modalSub');
+            const modalLabel = $('#modalLabel');
+            const modalInput = $('#modalInput');
+            const modalExtraGroup = $('#modalExtraGroup');
+            const modalExtraLabel = $('#modalExtraLabel');
+            const modalExtraInput = $('#modalExtraInput');
+            const modalConfirm = $('#modalConfirm');
+            const modalCancel = $('#modalCancel');
+            const toast = $('#toast');
+
+            // player
+            const playerWrapper = $('#playerWrapper');
+            const playerTitle = $('#playerTitle');
+            const playerSubject = $('#playerSubject');
+            const playerProgress = $('#playerProgress');
+            const toggleWatchedBtn = $('#toggleWatchedBtn');
+            const resetProgressBtn = $('#resetProgressBtn');
+            const downloadBtn = $('#downloadBtn');
+            const closePlayerBtn = $('#closePlayerBtn');
+            const downloadSection = $('#downloadSection');
+            const dlFill = $('#dlFill');
+            const dlStatusText = $('#dlStatusText');
+            const dlActionBtn = $('#dlActionBtn');
+            const autoplayBadge = $('#autoplayBadge');
+
+            // settings
+            const themeOptions = $('#themeOptions');
+            const autoNextToggle = $('#autoNextToggle');
+            const bgPlayToggle = $('#bgPlayToggle');
+            const dlFormat = $('#dlFormat');
+            const exportDataBtn = $('#exportDataBtn');
+            const importDataBtn = $('#importDataBtn');
+            const importFileInput = $('#importFileInput');
+            const clearDataBtn = $('#clearDataBtn');
+
+            // progress
+            const todayVideos = $('#todayVideos');
+            const todayTime = $('#todayTime');
+            const totalVideos = $('#totalVideos');
+            const streakDays = $('#streakDays');
+            const progressHistory = $('#progressHistory');
+
+            const settingsBtn = $('#settingsBtn');
+            const progressBtn = $('#progressBtn');
+
+            // ─── HELPERS ───
+            function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+            function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+            function formatTime(seconds) {
+                if (seconds < 60) return Math.floor(seconds) + 's';
+                if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
+                return Math.floor(seconds / 3600) + 'h ' + Math.floor((seconds % 3600) / 60) + 'm';
+            }
+
+            function getToday() {
+                return new Date().toISOString().slice(0, 10);
+            }
+
+            function getWeekAgo() {
+                const d = new Date();
+                d.setDate(d.getDate() - 7);
+                return d.toISOString().slice(0, 10);
+            }
+
+            function isSameDay(a, b) { return a.slice(0, 10) === b.slice(0, 10); }
+
+            // ─── STORAGE ───
+            function saveData() {
+                try {
+                    localStorage.setItem(STATE_KEY, JSON.stringify(data));
+                } catch (e) { console.warn('Save data error', e); }
+            }
+
+            function loadData() {
+                try {
+                    const raw = localStorage.getItem(STATE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (parsed.subjects) data = parsed;
+                    }
+                } catch (e) { console.warn('Load data error', e); }
+            }
+
+            function saveSettings() {
+                try {
+                    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                } catch (e) { console.warn('Save settings error', e); }
+            }
+
+            function loadSettings() {
+                try {
+                    const raw = localStorage.getItem(SETTINGS_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        settings = { ...settings, ...parsed };
+                    }
+                } catch (e) { console.warn('Load settings error', e); }
+            }
+
+            // ─── TOAST ───
+            let toastTimer = null;
+
+            function showToast(msg, duration = 2600) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+            }
+
+            // ─── THEME ───
+            function applyTheme(theme) {
+                if (theme === 'system') {
+                    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    document.documentElement.classList.toggle('dark', dark);
+                    settings.theme = 'system';
+                } else if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    settings.theme = 'dark';
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    settings.theme = 'light';
+                }
+                // update theme buttons
+                $$('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === settings.theme));
+                saveSettings();
+            }
+
+            function detectSystemTheme() {
+                const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (settings.theme === 'system') {
+                    document.documentElement.classList.toggle('dark', dark);
+                }
+            }
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', detectSystemTheme);
+
+            // ─── VIEWS ───
+            function showView(name) {
+                Object.keys(views).forEach(k => views[k].classList.toggle('active', k === name));
+                currentView = name;
+                // back button
+                backBtn.style.display = (name === 'dashboard') ? 'none' : 'flex';
+                // header title
+                if (name === 'dashboard') headerTitle.textContent = '📚 YT Study';
+                else if (name === 'subject') headerTitle.textContent = '📂 Subject';
+                else if (name === 'player') headerTitle.textContent = '▶ Player';
+                else if (name === 'settings') headerTitle.textContent = '⚙️ Settings';
+                else if (name === 'progress') headerTitle.textContent = '📊 Progress';
+                // fab visibility
+                fab.style.display = (name === 'dashboard' || name === 'subject') ? 'flex' : 'none';
+                // scroll to top
+                document.getElementById('viewport').scrollTop = 0;
+            }
+
+            // ─── RENDER DASHBOARD ───
+            function renderDashboard() {
+                const subs = data.subjects;
+                subjectsGrid.innerHTML = '';
+                if (subs.length === 0) {
+                    emptySubjects.style.display = 'block';
+                    subjectsGrid.style.display = 'none';
+                    subjectCount.textContent = '0 subjects';
+                    return;
+                }
+                emptySubjects.style.display = 'none';
+                subjectsGrid.style.display = 'grid';
+                subjectCount.textContent = subs.length + ' subject' + (subs.length > 1 ? 's' : '');
+
+                subs.forEach(sub => {
+                    const total = sub.videos.length;
+                    const watched = sub.videos.filter(v => v.watched).length;
+                    const pct = total > 0 ? Math.round((watched / total) * 100) : 0;
+                    const card = document.createElement('div');
+                    card.className = 'subject-card';
+                    card.innerHTML = `
+                <div>
+                  <div class="name">${escHtml(sub.name)}</div>
+                  <div class="meta"><span>📹 ${total}</span><span>✅ ${watched}</span></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                  <div class="progress-ring">${pct}%</div>
+                  <button class="delete-subject" data-id="${sub.id}" title="Delete subject">✕</button>
+                </div>
+              `;
+                    card.querySelector('.delete-subject').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (confirm(`Delete "${sub.name}" and all its videos?`)) {
+                            data.subjects = data.subjects.filter(s => s.id !== sub.id);
+                            saveData();
+                            renderDashboard();
+                            showToast('Subject deleted');
+                        }
+                    });
+                    card.addEventListener('click', () => openSubject(sub.id));
+                    subjectsGrid.appendChild(card);
+                });
+            }
+
+            // ─── RENDER SUBJECT ───
+            function renderSubject(subId) {
+                const sub = data.subjects.find(s => s.id === subId);
+                if (!sub) { showView('dashboard');
+                    renderDashboard(); return; }
+                currentSubjectId = subId;
+                subjectTitle.textContent = sub.name;
+                videoCount.textContent = sub.videos.length + ' video' + (sub.videos.length > 1 ? 's' : '');
+
+                videoList.innerHTML = '';
+                if (sub.videos.length === 0) {
+                    emptyVideos.style.display = 'block';
+                    videoList.style.display = 'none';
+                    return;
+                }
+                emptyVideos.style.display = 'none';
+                videoList.style.display = 'flex';
+
+                sub.videos.forEach((v, idx) => {
+                    const isWatched = v.watched;
+                    const pct = clamp(v.progress || 0, 0, 100);
+                    const item = document.createElement('div');
+                    item.className = 'video-item';
+                    const thumbUrl = v.thumbnail || `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`;
+                    item.innerHTML = `
+                <div class="thumb">
+                  <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.style.display='none'" />
+                  <div class="progress-overlay" style="width:${pct}%;"></div>
+                </div>
+                <div class="info">
+                  <div class="title">${escHtml(v.title || 'Untitled')}</div>
+                  <div class="sub">
+                    <span class="status ${isWatched ? 'watched' : 'pending'}">${isWatched ? '✅ Watched' : '⏳ Pending'}</span>
+                    <span>${pct > 0 ? pct + '%' : 'not started'}</span>
+                    <span>${v.duration ? formatTime(v.duration) : ''}</span>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button class="delete-video" data-id="${v.id}" title="Remove video">✕</button>
+                </div>
+              `;
+                    // click to play
+                    item.addEventListener('click', (e) => {
+                        if (e.target.closest('.delete-video')) return;
+                        openPlayer(subId, v.id);
+                    });
+                    // delete
+                    item.querySelector('.delete-video').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (confirm('Remove this video?')) {
+                            sub.videos = sub.videos.filter(vv => vv.id !== v.id);
+                            saveData();
+                            renderSubject(subId);
+                            showToast('Video removed');
+                        }
+                    });
+                    videoList.appendChild(item);
+                });
+            }
+
+            // ─── OPEN SUBJECT ───
+            function openSubject(subId) {
+                showView('subject');
+                renderSubject(subId);
+            }
+
+            // ─── PLAYER ───
+            let playerVideoId = null;
+            let playerSubjectId = null;
+            let playerVideoObj = null;
+            let isSeeking = false;
+
+            function openPlayer(subId, vidId) {
+                const sub = data.subjects.find(s => s.id === subId);
+                if (!sub) return;
+                const video = sub.videos.find(v => v.id === vidId);
+                if (!video) return;
+
+                playerSubjectId = subId;
+                playerVideoId = vidId;
+                playerVideoObj = video;
+                currentVideoId = vidId;
+
+                showView('player');
+                renderPlayerInfo();
+
+                // Load video in player
+                if (player && playerReady) {
+                    player.loadVideoById(video.videoId);
+                } else {
+                    // player will load when ready
+                    pendingVideoData = { subId, vidId };
+                }
+
+                // update autoplay badge
+                updateAutoplayBadge();
+
+                // start progress tracking
+                startProgressTracking();
+            }
+
+            function renderPlayerInfo() {
+                if (!playerVideoObj) return;
+                const v = playerVideoObj;
+                const sub = data.subjects.find(s => s.id === playerSubjectId);
+                playerTitle.textContent = v.title || 'Untitled';
+                playerSubject.textContent = '📁 ' + (sub ? sub.name : 'Unknown');
+                const pct = clamp(v.progress || 0, 0, 100);
+                playerProgress.textContent = '⏱ ' + (pct > 0 ? pct + '%' : 'not started');
+                toggleWatchedBtn.textContent = v.watched ? '✅ Watched' : '⏳ Mark Watched';
+                toggleWatchedBtn.style.background = v.watched ? '#dcfce7' : '';
+                toggleWatchedBtn.style.color = v.watched ? '#16a34a' : '';
+                // download status
+                updateDownloadUI();
+            }
+
+            function updateAutoplayBadge() {
+                autoplayBadge.classList.toggle('active', settings.autoNext);
+                autoplayBadge.textContent = settings.autoNext ? '⏭ Auto-next ON' : '⏭ Auto-next OFF';
+            }
+
+            // ─── YOUTUBE PLAYER ───
+            function initPlayer() {
+                if (typeof YT === 'undefined' || !YT.Player) {
+                    // wait for API
+                    setTimeout(initPlayer, 300);
+                    return;
+                }
+                player = new YT.Player('player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: '',
+                    playerVars: {
+                        modestbranding: 1,
+                        rel: 0,
+                        showinfo: 0,
+                        controls: 1,
+                        fs: 1,
+                        iv_load_policy: 3,
+                        autoplay: 0,
+                        origin: window.location.origin,
+                        enablejsapi: 1,
+                    },
+                    events: {
+                        onReady: onPlayerReady,
+                        onStateChange: onPlayerStateChange,
+                        onError: onPlayerError,
+                    },
+                });
+            }
+
+            function onPlayerReady() {
+                playerReady = true;
+                if (pendingVideoData) {
+                    const { subId, vidId } = pendingVideoData;
+                    const sub = data.subjects.find(s => s.id === subId);
+                    if (sub) {
+                        const v = sub.videos.find(vv => vv.id === vidId);
+                        if (v) {
+                            player.loadVideoById(v.videoId);
+                            // seek to progress
+                            if (v.progress > 0 && v.duration > 0) {
+                                const seekTo = (v.progress / 100) * v.duration;
+                                player.seekTo(seekTo, true);
+                            }
+                        }
+                    }
+                    pendingVideoData = null;
+                }
+            }
+
+            function onPlayerStateChange(event) {
+                if (!playerVideoObj) return;
+                const state = event.data;
+                // YT.PlayerState: -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued
+                if (state === 1) {
+                    isPlaying = true;
+                    // capture duration
+                    const dur = player.getDuration();
+                    if (dur > 0 && playerVideoObj.duration !== dur) {
+                        playerVideoObj.duration = dur;
+                        saveData();
+                    }
+                    startProgressTracking();
+                } else if (state === 0) {
+                    // ended
+                    isPlaying = false;
+                    // mark as fully watched if progress >= 90%
+                    if (playerVideoObj.progress >= 90) {
+                        playerVideoObj.watched = true;
+                        saveData();
+                        renderPlayerInfo();
+                        renderSubject(playerSubjectId);
+                    }
+                    // auto-next
+                    if (settings.autoNext) {
+                        playNextVideo();
+                    }
+                } else if (state === 2) {
+                    isPlaying = false;
+                } else {
+                    isPlaying = false;
+                }
+                // Update UI
+                renderPlayerInfo();
+                if (state === 1) {
+                    toggleWatchedBtn.textContent = '⏳ Watching...';
+                } else if (state === 0) {
+                    toggleWatchedBtn.textContent = playerVideoObj.watched ? '✅ Watched' : '⏳ Mark Watched';
+                }
+            }
+
+            function onPlayerError(e) {
+                console.warn('Player error', e);
+                showToast('⚠️ Video playback error. Try another video.');
+            }
+
+            function startProgressTracking() {
+                clearInterval(progressInterval);
+                progressInterval = setInterval(() => {
+                    if (!player || !playerVideoObj || !playerReady) return;
+                    try {
+                        const current = player.getCurrentTime();
+                        const dur = player.getDuration();
+                        if (dur > 0 && current >= 0) {
+                            const pct = clamp((current / dur) * 100, 0, 100);
+                            playerVideoObj.progress = pct;
+                            // auto-mark watched at 90%
+                            if (pct >= 90 && !playerVideoObj.watched) {
+                                playerVideoObj.watched = true;
+                                saveData();
+                                renderPlayerInfo();
+                                renderSubject(playerSubjectId);
+                            }
+                            // update UI
+                            playerProgress.textContent = '⏱ ' + Math.round(pct) + '%';
+                            // update progress in subject list (thumb overlay)
+                            saveData();
+                            // if subject view is open, re-render it
+                            if (currentView === 'subject' && currentSubjectId === playerSubjectId) {
+                                // lazy: just update the video list item
+                                updateVideoListItem(playerSubjectId, playerVideoObj.id);
+                            }
+                        }
+                    } catch (e) { /* ignore */ }
+                }, 1000);
+            }
+
+            function updateVideoListItem(subId, vidId) {
+                const sub = data.subjects.find(s => s.id === subId);
+                if (!sub) return;
+                const v = sub.videos.find(vv => vv.id === vidId);
+                if (!v) return;
+                // find the video item in the list and update its progress overlay
+                const items = videoList.querySelectorAll('.video-item');
+                for (const item of items) {
+                    const delBtn = item.querySelector('.delete-video');
+                    if (delBtn && delBtn.dataset.id === vidId) {
+                        const overlay = item.querySelector('.progress-overlay');
+                        if (overlay) {
+                            const pct = clamp(v.progress || 0, 0, 100);
+                            overlay.style.width = pct + '%';
+                        }
+                        // update status badge
+                        const statusSpan = item.querySelector('.status');
+                        if (statusSpan) {
+                            statusSpan.className = 'status ' + (v.watched ? 'watched' : 'pending');
+                            statusSpan.textContent = v.watched ? '✅ Watched' : '⏳ Pending';
+                        }
+                        // update sub text
+                        const subText = item.querySelector('.info .sub');
+                        if (subText) {
+                            const pct = clamp(v.progress || 0, 0, 100);
+                            const parts = subText.querySelectorAll('span');
+                            if (parts.length >= 2) {
+                                parts[1].textContent = pct > 0 ? pct + '%' : 'not started';
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            function playNextVideo() {
+                if (!playerSubjectId || !playerVideoId) return;
+                const sub = data.subjects.find(s => s.id === playerSubjectId);
+                if (!sub) return;
+                const idx = sub.videos.findIndex(v => v.id === playerVideoId);
+                if (idx === -1) return;
+                // find next video that is not watched (or any if all watched)
+                let nextIdx = -1;
+                for (let i = idx + 1; i < sub.videos.length; i++) {
+                    if (!sub.videos[i].watched) { nextIdx = i; break; }
+                }
+                if (nextIdx === -1) {
+                    // all remaining watched, loop to first unwatched or first
+                    for (let i = 0; i < sub.videos.length; i++) {
+                        if (!sub.videos[i].watched) { nextIdx = i; break; }
+                    }
+                    if (nextIdx === -1) nextIdx = 0;
+                }
+                if (nextIdx >= 0 && nextIdx < sub.videos.length) {
+                    const next = sub.videos[nextIdx];
+                    showToast('⏭ Auto-playing next: ' + (next.title || 'video'));
+                    openPlayer(playerSubjectId, next.id);
+                } else {
+                    showToast('🏁 No more videos in this subject');
+                }
+            }
+
+            // ─── PLAYER CONTROLS ───
+            toggleWatchedBtn.addEventListener('click', () => {
+                if (!playerVideoObj) return;
+                playerVideoObj.watched = !playerVideoObj.watched;
+                if (playerVideoObj.watched) {
+                    // if marked watched, set progress to 100
+                    playerVideoObj.progress = 100;
+                    if (player && playerReady) {
+                        try { player.seekTo(player.getDuration(), true); } catch (e) {}
+                    }
+                }
+                saveData();
+                renderPlayerInfo();
+                renderSubject(playerSubjectId);
+                showToast(playerVideoObj.watched ? '✅ Marked as watched' : '⏳ Marked as pending');
+            });
+
+            resetProgressBtn.addEventListener('click', () => {
+                if (!playerVideoObj) return;
+                if (confirm('Reset progress for this video?')) {
+                    playerVideoObj.progress = 0;
+                    playerVideoObj.watched = false;
+                    if (player && playerReady) {
+                        try { player.seekTo(0, true); } catch (e) {}
+                    }
+                    saveData();
+                    renderPlayerInfo();
+                    renderSubject(playerSubjectId);
+                    showToast('↺ Progress reset');
+                }
+            });
+
+            closePlayerBtn.addEventListener('click', () => {
+                if (player && playerReady) {
+                    try { player.pauseVideo(); } catch (e) {}
+                }
+                clearInterval(progressInterval);
+                if (playerSubjectId) {
+                    openSubject(playerSubjectId);
+                } else {
+                    showView('dashboard');
+                    renderDashboard();
+                }
+            });
+
+            // ─── DOWNLOAD ───
+            async function startDownload() {
+                if (!playerVideoObj) return;
+                const videoId = playerVideoObj.videoId;
+                const format = settings.dlFormat || 'mp4';
+                const url = `https://api.vevioz.com/api/button/${format}/${videoId}`;
+
+                dlFill.style.width = '0%';
+                dlStatusText.textContent = '⏳ Connecting...';
+                dlActionBtn.disabled = true;
+                dlActionBtn.textContent = '⏳';
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('API request failed');
+                    const data2 = await response.json();
+                    if (data2 && data2.download_url) {
+                        dlStatusText.textContent = '✅ Ready';
+                        dlFill.style.width = '100%';
+                        // trigger download
+                        const a = document.createElement('a');
+                        a.href = data2.download_url;
+                        a.target = '_blank';
+                        a.download = `${playerVideoObj.title || 'video'}.${format}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        showToast('⬇ Download started!');
+                    } else if (data2 && data2.url) {
+                        // alternative response format
+                        const a = document.createElement('a');
+                        a.href = data2.url;
+                        a.target = '_blank';
+                        a.download = `${playerVideoObj.title || 'video'}.${format}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        dlFill.style.width = '100%';
+                        dlStatusText.textContent = '✅ Download started';
+                        showToast('⬇ Download started!');
+                    } else {
+                        throw new Error('No download URL returned');
+                    }
+                } catch (err) {
+                    console.warn('Download error', err);
+                    dlStatusText.textContent = '❌ Failed';
+                    showToast('⚠️ Download failed. Try again or use another video.');
+                    // fallback: open in new tab
+                    const fallback = `https://www.youtube.com/watch?v=${videoId}`;
+                    if (confirm('Download API failed. Open video on YouTube to download?')) {
+                        window.open(fallback, '_blank');
+                    }
+                } finally {
+                    dlActionBtn.disabled = false;
+                    dlActionBtn.textContent = 'Start';
+                }
+            }
+
+            dlActionBtn.addEventListener('click', startDownload);
+            downloadBtn.addEventListener('click', startDownload);
+
+            function updateDownloadUI() {
+                // reset download section
+                dlFill.style.width = '0%';
+                dlStatusText.textContent = 'Ready';
+                dlActionBtn.disabled = false;
+                dlActionBtn.textContent = 'Start';
+            }
+
+            // ─── MODAL ───
+            let modalResolve = null;
+            let modalType = 'subject'; // 'subject' | 'video'
+
+            function openModal(title, sub, label, extraLabel, type, extraPlaceholder = '') {
+                return new Promise((resolve) => {
+                    modalTitle.textContent = title;
+                    modalSub.textContent = sub;
+                    modalLabel.textContent = label;
+                    modalInput.value = '';
+                    modalExtraGroup.classList.toggle('hidden', type === 'subject');
+                    if (type === 'video') {
+                        modalExtraLabel.textContent = extraLabel || 'YouTube URL';
+                        modalExtraInput.value = '';
+                        modalExtraInput.placeholder = extraPlaceholder || 'https://youtube.com/watch?v=...';
+                    }
+                    modalType = type;
+                    modalResolve = resolve;
+                    modalOverlay.classList.add('open');
+                    setTimeout(() => modalInput.focus(), 100);
+                });
+            }
+
+            function closeModal() {
+                modalOverlay.classList.remove('open');
+                if (modalResolve) {
+                    modalResolve(null);
+                    modalResolve = null;
+                }
+            }
+
+            modalCancel.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) closeModal();
+            });
+
+            modalConfirm.addEventListener('click', () => {
+                const name = modalInput.value.trim();
+                if (!name) { showToast('Please enter a name'); return; }
+                if (modalType === 'subject') {
+                    if (modalResolve) modalResolve({ type: 'subject', name });
+                    closeModal();
+                } else {
+                    const url = modalExtraInput.value.trim();
+                    if (!url) { showToast('Please enter a YouTube URL'); return; }
+                    if (modalResolve) modalResolve({ type: 'video', name, url });
+                    closeModal();
+                }
+            });
+
+            modalInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    if (modalType === 'subject') modalConfirm.click();
+                    else modalExtraInput.focus();
+                }
+            });
+            modalExtraInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') modalConfirm.click();
+            });
+
+            // ─── FAB ───
+            fab.addEventListener('click', () => {
+                if (currentView === 'dashboard') {
+                    // add subject
+                    openModal('Add Subject', 'Enter a name for your new subject', 'Subject Name', '', 'subject')
+                        .then(result => {
+                            if (result && result.type === 'subject') {
+                                const newSub = {
+                                    id: genId(),
+                                    name: result.name,
+                                    videos: [],
+                                    createdAt: new Date().toISOString(),
+                                };
+                                data.subjects.push(newSub);
+                                saveData();
+                                renderDashboard();
+                                showToast('📁 Subject created: ' + result.name);
+                            }
+                        });
+                } else if (currentView === 'subject' && currentSubjectId) {
+                    // add video to current subject
+                    openModal('Add Video', 'Paste a YouTube video or playlist link', 'Video Title (auto-detected)',
+                        'YouTube URL', 'video', 'https://youtube.com/watch?v=... or playlist link'
+                    ).then(async result => {
+                        if (result && result.type === 'video') {
+                            await importVideoToSubject(currentSubjectId, result.url, result.name);
+                        }
+                    });
+                }
+            });
+
+            // ─── IMPORT VIDEO ───
+            async function importVideoToSubject(subId, url, customTitle) {
+                const sub = data.subjects.find(s => s.id === subId);
+                if (!sub) { showToast('Subject not found'); return; }
+
+                // detect if playlist
+                const isPlaylist = url.includes('list=') || url.includes('playlist');
+                if (isPlaylist) {
+                    await importPlaylist(subId, url);
+                    return;
+                }
+
+                // single video
+                const videoId = extractVideoId(url);
+                if (!videoId) { showToast('⚠️ Invalid YouTube URL'); return; }
+
+                // check if already exists
+                if (sub.videos.some(v => v.videoId === videoId)) {
+                    showToast('⚠️ Video already in this subject');
+                    return;
+                }
+
+                showToast('⏳ Fetching video info...');
+                const info = await fetchVideoInfo(videoId);
+                if (!info) {
+                    showToast('⚠️ Could not fetch video info');
+                    return;
+                }
+
+                const newVideo = {
+                    id: genId(),
+                    videoId: videoId,
+                    title: customTitle || info.title || 'Untitled',
+                    thumbnail: info.thumbnail || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                    watched: false,
+                    progress: 0,
+                    duration: info.duration || 0,
+                    downloadStatus: 'none',
+                    downloadProgress: 0,
+                    addedAt: new Date().toISOString(),
+                };
+                sub.videos.push(newVideo);
+                saveData();
+                renderSubject(subId);
+                showToast('🎬 Video added: ' + newVideo.title);
+                // auto-play
+                openPlayer(subId, newVideo.id);
+            }
+
+            async function importPlaylist(subId, url) {
+                const playlistId = extractPlaylistId(url);
+                if (!playlistId) { showToast('⚠️ Could not extract playlist ID'); return; }
+
+                showToast('⏳ Fetching playlist...');
+                try {
+                    const videoIds = await fetchPlaylistVideos(playlistId);
+                    if (!videoIds || videoIds.length === 0) {
+                        showToast('⚠️ No videos found in playlist');
+                        return;
+                    }
+                    const sub = data.subjects.find(s => s.id === subId);
+                    if (!sub) return;
+                    let added = 0;
+                    for (const vid of videoIds) {
+                        if (!sub.videos.some(v => v.videoId === vid)) {
+                            const info = await fetchVideoInfo(vid);
+                            if (info) {
+                                sub.videos.push({
+                                    id: genId(),
+                                    videoId: vid,
+                                    title: info.title || 'Untitled',
+                                    thumbnail: info.thumbnail || `https://img.youtube.com/vi/${vid}/mqdefault.jpg`,
+                                    watched: false,
+                                    progress: 0,
+                                    duration: info.duration || 0,
+                                    downloadStatus: 'none',
+                                    downloadProgress: 0,
+                                    addedAt: new Date().toISOString(),
+                                });
+                                added++;
+                            }
+                            // small delay to avoid rate limiting
+                            await new Promise(r => setTimeout(r, 200));
+                        }
+                    }
+                    saveData();
+                    renderSubject(subId);
+                    showToast(`📋 Playlist imported: ${added} video${added > 1 ? 's' : ''}`);
+                    if (added > 0 && sub.videos.length > 0) {
+                        // open first video
+                        const first = sub.videos[sub.videos.length - added];
+                        if (first) openPlayer(subId, first.id);
+                    }
+                } catch (e) {
+                    console.warn('Playlist import error', e);
+                    showToast('⚠️ Failed to import playlist');
+                }
+            }
+
+            function extractVideoId(url) {
+                const patterns = [
+                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&?#]+)/,
+                    /youtube\.com\/shorts\/([^&?#]+)/
+                ];
+                for (const p of patterns) {
+                    const m = url.match(p);
+                    if (m) return m[1];
+                }
+                return null;
+            }
+
+            function extractPlaylistId(url) {
+                const m = url.match(/[?&]list=([^&?#]+)/);
+                return m ? m[1] : null;
+            }
+
+            async function fetchVideoInfo(videoId) {
+                try {
+                    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+                    if (!res.ok) return null;
+                    const data2 = await res.json();
+                    return {
+                        title: data2.title,
+                        thumbnail: data2.thumbnail_url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                        duration: 0, // oembed doesn't give duration
+                    };
+                } catch (e) {
+                    console.warn('Fetch video info error', e);
+                    return null;
+                }
+            }
+
+            async function fetchPlaylistVideos(playlistId) {
+                try {
+                    // Use YouTube RSS feed
+                    const url = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error('RSS fetch failed');
+                    const text = await res.text();
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(text, 'text/xml');
+                    const entries = xml.querySelectorAll('entry');
+                    const ids = [];
+                    entries.forEach(entry => {
+                        const link = entry.querySelector('link[rel="alternate"]');
+                        if (link) {
+                            const href = link.getAttribute('href');
+                            const m = href.match(/v=([^&]+)/);
+                            if (m) ids.push(m[1]);
+                        }
+                    });
+                    return ids;
+                } catch (e) {
+                    console.warn('Fetch playlist error', e);
+                    // fallback: try to parse from page
+                    try {
+                        const pageUrl = `https://www.youtube.com/playlist?list=${playlistId}`;
+                        const res2 = await fetch(pageUrl);
+                        const html = await res2.text();
+                        const matches = html.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/g);
+                        if (matches) {
+                            const ids2 = matches.map(m => m.match(/([a-zA-Z0-9_-]{11})/)[1]);
+                            return [...new Set(ids2)];
+                        }
+                    } catch (e2) { /* ignore */ }
+                    return [];
+                }
+            }
+
+            // ─── SETTINGS ───
+            settingsBtn.addEventListener('click', () => {
+                showView('settings');
+                renderSettings();
+            });
+
+            function renderSettings() {
+                // theme
+                $$('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === settings.theme));
+                // toggles
+                autoNextToggle.classList.toggle('active', settings.autoNext);
+                bgPlayToggle.classList.toggle('active', settings.bgPlay);
+                dlFormat.value = settings.dlFormat || 'mp4';
+                updateAutoplayBadge();
+            }
+
+            // theme buttons
+            themeOptions.addEventListener('click', (e) => {
+                const btn = e.target.closest('.theme-btn');
+                if (!btn) return;
+                applyTheme(btn.dataset.theme);
+                renderSettings();
+            });
+
+            // toggles
+            autoNextToggle.addEventListener('click', () => {
+                settings.autoNext = !settings.autoNext;
+                saveSettings();
+                renderSettings();
+                updateAutoplayBadge();
+                showToast(settings.autoNext ? 'Auto-next ON' : 'Auto-next OFF');
+            });
+
+            bgPlayToggle.addEventListener('click', () => {
+                settings.bgPlay = !settings.bgPlay;
+                saveSettings();
+                renderSettings();
+                showToast(settings.bgPlay ? 'Background play ON' : 'Background play OFF');
+            });
+
+            dlFormat.addEventListener('change', (e) => {
+                settings.dlFormat = e.target.value;
+                saveSettings();
+                showToast('Download format: ' + settings.dlFormat.toUpperCase());
+            });
+
+            // ─── PROGRESS VIEW ───
+            progressBtn.addEventListener('click', () => {
+                showView('progress');
+                renderProgress();
+            });
+
+            function renderProgress() {
+                const today = getToday();
+                const subs = data.subjects;
+                let todayCount = 0;
+                let todaySeconds = 0;
+                let totalVidCount = 0;
+
+                // track daily progress from video data
+                // We store daily stats in a separate object in data
+                if (!data.daily) data.daily = {};
+                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0 };
+
+                // compute today's stats from videos watched today (we approximate by checking progress)
+                // For simplicity, we count videos with progress >= 90 as "watched today"
+                // and we track time spent based on progress changes
+                // We'll store daily stats in data.daily
+
+                // Actually, let's compute from the data we have:
+                // For each video, if it's watched and updated today, count it
+                // We'll use a simpler approach: count watched videos and estimate time
+
+                let totalWatched = 0;
+                let totalTime = 0;
+                subs.forEach(sub => {
+                    sub.videos.forEach(v => {
+                        if (v.watched) totalWatched++;
+                        // estimate time: if progress > 0, assume (progress/100) * duration
+                        if (v.progress > 0 && v.duration > 0) {
+                            totalTime += (v.progress / 100) * v.duration;
+                        }
+                    });
+                });
+                totalVidCount = totalWatched;
+
+                // Today's stats: we use the daily object
+                const todayData = data.daily[today] || { videos: 0, time: 0 };
+                todayCount = todayData.videos || 0;
+                todaySeconds = todayData.time || 0;
+
+                // But we also want to count today's watched videos dynamically
+                // Let's recompute today's data from videos that were watched today
+                // We'll use the updatedAt field if present, or fallback to the daily object
+
+                // For simplicity, we'll use the daily object and also count newly watched videos
+                // When a video is marked watched, we update the daily stats
+
+                todayVideos.textContent = todayCount;
+                todayTime.textContent = formatTime(todaySeconds);
+                totalVideos.textContent = totalVidCount;
+
+                // streak: count consecutive days with at least 1 video
+                let streak = 0;
+                const dates = Object.keys(data.daily || {}).sort();
+                for (let i = dates.length - 1; i >= 0; i--) {
+                    const d = dates[i];
+                    if (data.daily[d].videos > 0) {
+                        streak++;
+                    } else {
+                        break;
+                    }
+                }
+                streakDays.textContent = streak;
+
+                // history: last 7 days
+                const weekAgo = getWeekAgo();
+                const historyData = [];
+                for (let d = new Date(weekAgo); d <= new Date(); d.setDate(d.getDate() + 1)) {
+                    const key = d.toISOString().slice(0, 10);
+                    const entry = data.daily[key] || { videos: 0, time: 0 };
+                    historyData.push({ date: key, videos: entry.videos || 0, time: entry.time || 0 });
+                }
+                progressHistory.innerHTML = '';
+                historyData.forEach(h => {
+                    const div = document.createElement('div');
+                    div.className = 'day-item';
+                    const isToday = h.date === today;
+                    div.innerHTML = `
+                <span class="date">${isToday ? 'Today' : formatDate(h.date)}</span>
+                <span class="detail">${h.videos} video${h.videos !== 1 ? 's' : ''} · ${formatTime(h.time)}</span>
+              `;
+                    progressHistory.appendChild(div);
+                });
+            }
+
+            function formatDate(dateStr) {
+                const d = new Date(dateStr + 'T00:00:00');
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+
+            // ─── UPDATE DAILY PROGRESS ───
+            function updateDailyProgress(videoId, progress, watched) {
+                const today = getToday();
+                if (!data.daily) data.daily = {};
+                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0 };
+                // If video was just marked watched, increment count
+                // This is called from the player when progress changes
+                // We'll check if the video is now watched and wasn't before
+                // But we need to track this per video per day to avoid double counting
+                if (!data.daily[today]._tracked) data.daily[today]._tracked = {};
+                if (watched && !data.daily[today]._tracked[videoId]) {
+                    data.daily[today].videos = (data.daily[today].videos || 0) + 1;
+                    data.daily[today]._tracked[videoId] = true;
+                    saveData();
+                }
+                // update time: we add incremental time
+                // We'll do this in the progress interval
+            }
+
+            // ─── EXPORT / IMPORT / CLEAR ───
+            exportDataBtn.addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify({ data, settings }, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ytstudy_backup_${getToday()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('📤 Data exported');
+            });
+
+            importDataBtn.addEventListener('click', () => {
+                importFileInput.click();
+            });
+
+            importFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const imported = JSON.parse(ev.target.result);
+                        if (imported.data && imported.data.subjects) {
+                            data = imported.data;
+                            if (imported.settings) settings = { ...settings, ...imported.settings };
+                            saveData();
+                            saveSettings();
+                            renderDashboard();
+                            showToast('📥 Data imported successfully!');
+                            applyTheme(settings.theme);
+                            renderSettings();
+                        } else {
+                            showToast('⚠️ Invalid backup file');
+                        }
+                    } catch (err) {
+                        showToast('⚠️ Error reading file');
+                        console.warn(err);
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            });
+
+            clearDataBtn.addEventListener('click', () => {
+                if (confirm('⚠️ Delete ALL data? This cannot be undone!')) {
+                    if (confirm('Are you sure?')) {
+                        data = { subjects: [], daily: {} };
+                        saveData();
+                        renderDashboard();
+                        showView('dashboard');
+                        showToast('🗑 All data cleared');
+                    }
+                }
+            });
+
+            // ─── BACK BUTTON ───
+            backBtn.addEventListener('click', () => {
+                if (currentView === 'player') {
+                    if (player && playerReady) {
+                        try { player.pauseVideo(); } catch (e) {}
+                    }
+                    clearInterval(progressInterval);
+                    if (playerSubjectId) {
+                        openSubject(playerSubjectId);
+                    } else {
+                        showView('dashboard');
+                        renderDashboard();
+                    }
+                } else if (currentView === 'subject') {
+                    showView('dashboard');
+                    renderDashboard();
+                } else if (currentView === 'settings' || currentView === 'progress') {
+                    showView('dashboard');
+                    renderDashboard();
+                } else {
+                    showView('dashboard');
+                    renderDashboard();
+                }
+            });
+
+            // ─── ESC ───
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (modalOverlay.classList.contains('open')) closeModal();
+                    else if (currentView === 'player') backBtn.click();
+                    else if (currentView !== 'dashboard') backBtn.click();
+                }
+            });
+
+            // ─── UTILITY ───
+            function escHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ─── INIT ───
+            function init() {
+                loadData();
+                loadSettings();
+                applyTheme(settings.theme);
+
+                // ensure daily object exists
+                if (!data.daily) data.daily = {};
+
+                renderDashboard();
+                showView('dashboard');
+
+                // init YouTube player
+                if (typeof YT !== 'undefined' && YT.Player) {
+                    initPlayer();
+                } else {
+                    // wait for API
+                    window.onYouTubeIframeAPIReady = initPlayer;
+                    // if already loaded, initPlayer will be called by the API
+                }
+
+                // listen for visibility change for background play
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        // background: if bgPlay is on, keep playing
+                        if (settings.bgPlay && player && isPlaying) {
+                            // do nothing, keep playing
+                        }
+                    }
+                });
+
+                console.log('📚 YT Study initialized');
+            }
+
+            // handle YouTube API load
+            if (typeof YT === 'undefined') {
+                window.onYouTubeIframeAPIReady = initPlayer;
+            }
+
+            // start
+            init();
+
+            // ─── EXTRA: handle keyboard shortcuts ───
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ' && currentView === 'player') {
+                    e.preventDefault();
+                    if (player && playerReady) {
+                        if (isPlaying) player.pauseVideo();
+                        else player.playVideo();
+                    }
+                }
+                if (e.key === 'ArrowRight' && currentView === 'player' && player && playerReady) {
+                    e.preventDefault();
+                    const cur = player.getCurrentTime();
+                    player.seekTo(cur + 10, true);
+                }
+                if (e.key === 'ArrowLeft' && currentView === 'player' && player && playerReady) {
+                    e.preventDefault();
+                    const cur = player.getCurrentTime();
+                    player.seekTo(cur - 10, true);
+                }
+                if (e.key === 'f' && currentView === 'player') {
+                    const wrapper = $('#playerWrapper');
+                    if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+                    else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+                }
+            });
+
+            // ─── OVERRIDE: track daily progress on video watch ───
+            // Patch the progress tracking to update daily stats
+            const origStartTracking = startProgressTracking;
+            startProgressTracking = function() {
+                clearInterval(progressInterval);
+                progressInterval = setInterval(() => {
+                    if (!player || !playerVideoObj || !playerReady) return;
+                    try {
+                        const current = player.getCurrentTime();
+                        const dur = player.getDuration();
+                        if (dur > 0 && current >= 0) {
+                            const pct = clamp((current / dur) * 100, 0, 100);
+                            const prevPct = playerVideoObj.progress || 0;
+                            playerVideoObj.progress = pct;
+                            if (pct >= 90 && !playerVideoObj.watched) {
+                                playerVideoObj.watched = true;
+                                // update daily
+                                const today = getToday();
+                                if (!data.daily) data.daily = {};
+                                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0, _tracked: {} };
+                                if (!data.daily[today]._tracked) data.daily[today]._tracked = {};
+                                if (!data.daily[today]._tracked[playerVideoObj.id]) {
+                                    data.daily[today].videos = (data.daily[today].videos || 0) + 1;
+                                    data.daily[today]._tracked[playerVideoObj.id] = true;
+                                }
+                                saveData();
+                                renderPlayerInfo();
+                                renderSubject(playerSubjectId);
+                            }
+                            // add time increment (only if progress increased)
+                            if (pct > prevPct && playerVideoObj.duration > 0) {
+                                const timeInc = ((pct - prevPct) / 100) * playerVideoObj.duration;
+                                const today = getToday();
+                                if (!data.daily) data.daily = {};
+                                if (!data.daily[today]) data.daily[today] = { videos: 0, time: 0, _tracked: {} };
+                                data.daily[today].time = (data.daily[today].time || 0) + timeInc;
+                                saveData();
+                            }
+                            // update UI
+                            playerProgress.textContent = '⏱ ' + Math.round(pct) + '%';
+                            saveData();
+                            if (currentView === 'subject' && currentSubjectId === playerSubjectId) {
+                                updateVideoListItem(playerSubjectId, playerVideoObj.id);
+                            }
+                        }
+                    } catch (e) { /* ignore */ }
+                }, 1000);
+            };
+
+            // Patch openPlayer to use the new tracking
+            const origOpenPlayer = openPlayer;
+            openPlayer = function(subId, vidId) {
+                origOpenPlayer(subId, vidId);
+                // ensure daily tracking is active
+            };
+
+            // Also patch renderPlayerInfo to show daily stats
+            const origRenderPlayerInfo = renderPlayerInfo;
+            renderPlayerInfo = function() {
+                origRenderPlayerInfo();
+                // update progress view if it's open
+                if (currentView === 'progress') renderProgress();
+            };
+
+            // Patch renderProgress to be called after daily updates
+            const origRenderProgress = renderProgress;
+            renderProgress = function() {
+                origRenderProgress();
+            };
+
+            console.log('✅ YT Study fully loaded!');
+        })();
+    </script>
+</body>
+</html>
